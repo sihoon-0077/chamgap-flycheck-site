@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlyCheck 결과</title>
+<meta name="description" content="참값 × FlyCheck 결과 대시보드. HTML은 고정이고 data/results.json, data/learning_curve.csv만 교체해 갱신한다.">
+<style>
+  /* Tokens: reference palette (dataviz skill). Series slots validated light + dark. */
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11, 11, 11, .10); --wash: #f0efec;
+    --accent: #2a78d6;
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+    --s5: #e87ba4; --s6: #008300; --s7: #4a3aa7; --s8: #e34948;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, .10); --wash: #262624;
+      --accent: #3987e5;
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+      --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, .10); --wash: #262624;
+    --accent: #3987e5;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--page); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    font-size: 15px; line-height: 1.6;
+    word-break: keep-all; overflow-wrap: break-word;   /* Korean wraps at spaces, not mid-word */
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+  @media (min-width: 720px) { .wrap { padding: 0 32px; } }
+
+  /* header.wrap / footer.wrap outrank .wrap, so only the vertical padding is set here */
+  header.wrap { padding-top: 48px; padding-bottom: 8px; }
+  .eyebrow { margin: 0 0 6px; font-size: 13px; color: var(--ink-2); }
+  h1 { margin: 0 0 10px; font-size: 28px; line-height: 1.3; }
+  .lede { margin: 0; max-width: 68ch; color: var(--ink-2); }
+  .notice {
+    display: flex; gap: 10px; align-items: flex-start; margin: 20px 0 0; padding: 12px 16px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; font-size: 14px;
+  }
+  .notice[hidden] { display: none; }
+  .notice-icon { flex: none; font-weight: 700; }
+  #notice-text { min-width: 0; overflow-wrap: anywhere; }   /* long domain ids must not widen the page */
+
+  .card {
+    margin: 24px 0; padding: 24px 16px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px;
+  }
+  @media (min-width: 720px) { .card { padding: 28px 32px; } }
+  .section-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
+  h2 { margin: 0; font-size: 20px; line-height: 1.3; }
+  .badges { display: flex; flex-wrap: wrap; gap: 6px; }
+  .badge {
+    padding: 2px 10px; font-size: 12px; color: var(--ink-2); background: var(--wash);
+    border: 1px solid var(--border); border-radius: 999px; max-width: 100%; overflow-wrap: anywhere;
+  }
+  .meta { margin: 10px 0 0; font-size: 13px; color: var(--ink-2); overflow-wrap: anywhere; }
+  .note { margin: 14px 0 0; font-size: 13px; color: var(--ink-2); }
+
+  .table-wrap { margin-top: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+  caption { text-align: left; font-size: 13px; color: var(--ink-2); padding-bottom: 8px; }
+  th, td { padding: 10px 10px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; vertical-align: top; }
+  th:first-child, td:first-child { text-align: left; padding-left: 0; }
+  /* headers wrap so ten columns fit the card; values stay on one line */
+  thead th { font-size: 12px; font-weight: 600; color: var(--ink-2); white-space: normal; vertical-align: bottom; min-width: 64px; }
+  tbody tr:last-child > * { border-bottom: 0; }
+  .sub { display: block; font-size: 12px; color: var(--ink-2); }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 12px 20px; margin-top: 20px; }
+  .controls label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-2); }
+  select {
+    min-width: 200px; max-width: 100%; padding: 7px 10px; font: inherit; font-size: 14px;
+    color: var(--ink); background: var(--page); border: 1px solid var(--border); border-radius: 8px;
+  }
+  select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 18px; font-size: 13px; }
+  .legend-item { display: inline-flex; align-items: center; gap: 8px; }
+  .legend-item .sub { display: inline; }
+
+  .chart { position: relative; margin-top: 8px; }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; }
+  .chart svg:focus { outline: none; }
+  .chart svg:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
+  .chart text { font-family: inherit; }
+  .gridline { stroke: var(--grid); stroke-width: 1; }
+  .axisline { stroke: var(--axis); stroke-width: 1; }
+  .tick { fill: var(--muted); font-size: 12px; }
+  .axis-title { fill: var(--ink-2); font-size: 12px; }
+  .refline { stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 5 4; }
+  .crosshair { stroke: var(--axis); stroke-width: 1; }
+  .marker { stroke: var(--surface); stroke-width: 2; }
+  .tooltip {
+    position: absolute; top: 0; left: 0; z-index: 2; min-width: 220px; max-width: min(320px, calc(100vw - 32px));
+    padding: 10px 12px; font-size: 12px; pointer-events: none; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, .10);
+  }
+  .tooltip[hidden] { display: none; }
+  .tt-title { margin-bottom: 6px; font-weight: 600; }
+  .tt-row { display: flex; align-items: center; gap: 8px; line-height: 1.9; }
+  .tt-row .tt-label { flex: 1; color: var(--ink-2); }
+  .tt-row .tt-value { font-variant-numeric: tabular-nums; }
+
+  details { margin-top: 18px; }
+  summary { cursor: pointer; font-size: 14px; color: var(--ink-2); }
+  summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 16px 0 0; font-size: 13px; }
+  dt { color: var(--ink-2); }
+  dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+  code { padding: 1px 6px; font-size: .92em; background: var(--wash); border-radius: 4px; overflow-wrap: anywhere; }
+  .error { margin-top: 16px; padding: 12px 16px; font-size: 14px; background: var(--wash); border-radius: 8px; }
+  footer.wrap { padding-top: 8px; padding-bottom: 48px; font-size: 13px; color: var(--ink-2); }
+  footer p { margin: 0 0 6px; }
+</style>
+</head>
+<body>
+<header class="wrap">
+  <p class="eyebrow">참값 × FlyCheck · /results</p>
+  <h1>결과 대시보드</h1>
+  <p class="lede">이 페이지는 고정된 HTML입니다. <code>data/results.json</code>과 <code>data/learning_curve.csv</code>만 바꾸면 표와 그래프가 다시 그려집니다.</p>
+  <p class="notice" id="notice" hidden><span class="notice-icon" aria-hidden="true">⚠</span><span id="notice-text"></span></p>
+</header>
+
+<main class="wrap">
+  <section class="card" id="policies" aria-labelledby="policies-title">
+    <div class="section-head">
+      <h2 id="policies-title">정책별 요약</h2>
+      <div class="badges" id="policy-badges"></div>
+    </div>
+    <p class="meta" id="policy-meta">불러오는 중…</p>
+    <div class="table-wrap"><table id="policy-table"></table></div>
+    <p class="note">자동 정답률 + 자동 오진률 + 사람 인계 + 시간 초과 = 100%. 사람 인계와 정답 UNKNOWN은 자동 성공으로 세지 않습니다. 시간은 시뮬레이터 안의 시간, 물은 명령한 양(실제 도착량 아님)입니다.</p>
+  </section>
+
+  <section class="card" id="curve" aria-labelledby="curve-title">
+    <div class="section-head">
+      <h2 id="curve-title">학습곡선</h2>
+      <div class="badges" id="curve-badges"></div>
+    </div>
+    <div class="controls">
+      <label>지표 <select id="metric"></select></label>
+      <label>사건 범위 <select id="scope"></select></label>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="chart" id="chart">
+      <div class="tooltip" id="tooltip" role="status" aria-live="polite" hidden></div>
+    </div>
+    <p class="meta" id="curve-meta">불러오는 중…</p>
+    <details>
+      <summary>표로 보기</summary>
+      <div class="table-wrap"><table id="curve-table"></table></div>
+    </details>
+  </section>
+
+  <section class="card" id="provenance" aria-labelledby="prov-title">
+    <h2 id="prov-title">데이터 출처</h2>
+    <dl id="prov-list"></dl>
+  </section>
+</main>
+
+<footer class="wrap">
+  <p>갱신: <code>chamgap_v4/</code>에서 <code>python -m experiments.export_site_data --out ../site/results/data</code>를 실행해 <code>data/</code>의 두 파일만 교체합니다. HTML은 고치지 않습니다.</p>
+  <p>가상환경 결과는 현장 성능이 아닙니다. 그래프마다 붙은 domain 표시를 함께 읽으세요.</p>
+</footer>
+
+<script>
+'use strict';
+
+const BASELINE = 'fixed_P0';
+// Fixed entity order -> fixed color slot. A model keeps its color when others are absent.
+const MODEL_ORDER = ['mlp_h64', 'mlp_h44_matched', 'fly_random', 'fly_rewired', 'fly_real'];
+const MODEL_LABELS = {
+  mlp_h64: 'MLP 은닉 64', mlp_h44_matched: 'MLP 은닉 44 (fly와 크기 맞춤)',
+  fly_random: 'fly 난수 연결', fly_rewired: 'fly 차수 보존 재배선', fly_real: 'fly 실제 연결',
+  [BASELINE]: '고정 정책 P0 (학습 없음)',
+};
+const SCOPE_LABELS = {
+  all: '전체 시험 사건', excl_truth_unknown: '정답 UNKNOWN 제외', truth_unknown_only: '정답 UNKNOWN 사건만',
+};
+const METRICS = [
+  { key: 'auto_correct', label: '자동 정답률', pct: true },
+  { key: 'auto_wrong', label: '자동 오진률', pct: true },
+  { key: 'human', label: '사람 인계율', pct: true },
+  { key: 'timeout', label: '시간 초과율', pct: true },
+  { key: 'checks', label: '평균 점검 수', digits: 2 },
+  { key: 'elapsed_s', label: '평균 시간 (초, 시뮬레이터)', digits: 1 },
+  { key: 'water_ml', label: '평균 명령 물량 (mL)', digits: 2 },
+];
+const NUMERIC = new Set(['n_episodes', 'seed', 'params', 'auto_correct', 'auto_wrong', 'human',
+  'checks', 'elapsed_s', 'water_ml', 'timeout', 'n_test_events']);
+const SHAPES = ['circle', 'square', 'triangle', 'diamond'];
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/* ---------- small helpers ---------- */
+const $ = (id) => document.getElementById(id);
+function el(tag, props = {}, children = []) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === 'text') node.textContent = v;
+    else if (k === 'class') node.className = v;
+    else node.setAttribute(k, v);
+  }
+  for (const c of [].concat(children)) if (c != null) node.append(c);
+  return node;
+}
+function svg(tag, attrs = {}, style = {}) {
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  for (const [k, v] of Object.entries(style)) node.style.setProperty(k, v);
+  return node;
+}
+const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+const pct = (v) => (isNum(v) ? `${(v * 100).toFixed(1)}%` : '—');
+const num = (v, d = 2) => (isNum(v) ? v.toLocaleString('ko-KR', { minimumFractionDigits: d, maximumFractionDigits: d }) : '—');
+const fmt = (metric, v) => (metric.pct ? pct(v) : num(v, metric.digits));
+const shortHash = (h) => (h ? String(h).slice(0, 12) : '—');
+function when(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso || '—';
+  return `${d.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'medium', timeStyle: 'short' })} KST`;
+}
+function domainNote(domain) {
+  if (/^SIM/i.test(domain)) return '가상 시뮬레이터 결과 · 실제 현장 성능 아님';
+  if (/^REAL/i.test(domain)) return '실물 시험 결과';
+  return '';
+}
+function badge(text, title) { return el('span', { class: 'badge', text, title: title || text }); }
+const unique = (xs) => [...new Set(xs.filter((x) => x !== null && x !== undefined && x !== ''))];
+
+/* data/ always sits beside this index.html, also when served as /results without a slash */
+function dataUrl(name) {
+  const u = new URL(location.href);
+  u.search = ''; u.hash = '';
+  const last = u.pathname.split('/').pop();
+  if (last && !last.includes('.')) u.pathname += '/';
+  return new URL(`data/${name}`, u);
+}
+async function loadText(name) {
+  const res = await fetch(dataUrl(name), { cache: 'no-store' });
+  if (!res.ok) throw new Error(`data/${name}: HTTP ${res.status}`);
+  return res.text();
+}
+function showError(sectionId, err) {
+  const hint = location.protocol === 'file:'
+    ? '파일을 직접 열면(file://) 브라우저가 data/ 파일을 읽지 못합니다. 이 폴더에서 python -m http.server 8000 을 실행한 뒤 http://localhost:8000/ 으로 여세요.'
+    : `데이터를 읽지 못했습니다: ${err.message}`;
+  const section = $(sectionId);
+  section.querySelectorAll('.meta').forEach((m) => { m.textContent = ''; });
+  section.append(el('p', { class: 'error', role: 'alert', text: hint }));
+}
+
+/* RFC 4180 CSV: quoted fields, escaped quotes, CRLF/LF, BOM */
+function parseCSV(text) {
+  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
+  const rows = []; let row = []; let field = ''; let quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else quoted = false; }
+      else field += c;
+    } else if (c === '"') quoted = true;
+    else if (c === ',') { row.push(field); field = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      row.push(field); rows.push(row); row = []; field = '';
+    } else field += c;
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push(row); }
+  const [head, ...body] = rows.filter((r) => !(r.length === 1 && r[0] === ''));
+  return body.map((r) => Object.fromEntries(head.map((h, j) => [h, NUMERIC.has(h) ? Number(r[j]) : r[j]])));
+}
+
+const notices = new Map();   // note text -> set of domains that share it
+function addNotice(domain) {
+  const note = domainNote(domain);
+  if (!note) return;
+  if (!notices.has(note)) notices.set(note, new Set());
+  notices.get(note).add(domain);
+  $('notice-text').textContent = [...notices]
+    .map(([text, domains]) => `${text} (domain: ${[...domains].join(', ')})`).join(' / ');
+  $('notice').hidden = false;
+}
+
+/* ---------- policies: results.json ---------- */
+function renderPolicies(doc) {
+  const policies = doc.policies || [];
+  const domains = unique(policies.map((p) => p.domain).concat(doc.domain));
+  const connectomes = unique(policies.map((p) => p.connectome));
+  const badges = $('policy-badges');
+  domains.forEach((d) => { badges.append(badge(`domain: ${d}`, domainNote(d))); addNotice(d); });
+  connectomes.forEach((c) => badges.append(badge(`connectome: ${c}`)));
+
+  const episodes = unique(policies.map((p) => `${p.episodes}개 (seed ${p.seed_start}–${p.seed_start + p.episodes - 1})`));
+  $('policy-meta').textContent = [
+    episodes.length === 1 ? `평가 사건 ${episodes[0]}` : '정책마다 평가 사건이 다릅니다',
+    `생성 ${when(doc.generated_at)}`, `code ${shortHash(doc.code_sha256)}`,
+  ].join(' · ');
+
+  const cols = [
+    ['정책', null], ['평가 사건', null], ['자동 정답률', null], ['자동 오진률', '95% 부트스트랩 구간'],
+    ['사람 인계', null], ['시간 초과', null], ['정답 UNKNOWN 인계율', '인계 / 해당 사건'],
+    ['평균 점검 수', null], ['평균 시간 (초)', null], ['평균 물 (mL)', '명령량'],
+  ];
+  const table = $('policy-table');
+  table.replaceChildren(
+    el('caption', { text: '정책별 폐루프 평가 요약 (chamgap.evaluate summary 필드)' }),
+    el('thead', {}, el('tr', {}, cols.map(([h, sub]) => el('th', { scope: 'col' }, [h, sub ? el('span', { class: 'sub', text: sub }) : null])))),
+  );
+  const tbody = el('tbody');
+  for (const p of policies) {
+    const s = p.summary || {};
+    const ci = Array.isArray(s.auto_wrong_bootstrap95) ? `${pct(s.auto_wrong_bootstrap95[0])}–${pct(s.auto_wrong_bootstrap95[1])}` : '';
+    const u = p.truth_unknown || {};
+    const model = p.model ? `${p.model.kind} · 파라미터 ${p.model.trainable_parameters.toLocaleString('ko-KR')}` : p.policy;
+    tbody.append(el('tr', {}, [
+      el('th', { scope: 'row' }, [p.label || p.policy, el('span', { class: 'sub', text: model })]),
+      el('td', { text: String(p.episodes) }),
+      el('td', { text: pct(s.auto_correct) }),
+      el('td', {}, [pct(s.auto_wrong), el('span', { class: 'sub', text: ci })]),
+      el('td', { text: pct(s.human) }),
+      el('td', { text: pct(s.timeout) }),
+      el('td', {}, [pct(u.handoff_rate), el('span', { class: 'sub', text: isNum(u.n_truth_unknown) ? `${u.handed_to_human} / ${u.n_truth_unknown}` : '' })]),
+      el('td', { text: num(s.checks, 2) }),
+      el('td', { text: num(s.elapsed_s, 1) }),
+      el('td', { text: num(s.commanded_water_ml, 2) }),
+    ]));
+  }
+  table.append(tbody);
+
+  const list = $('prov-list');
+  list.append(
+    el('dt', { text: 'results.json 생성' }), el('dd', { text: when(doc.generated_at) }),
+    el('dt', { text: 'results.json code' }), el('dd', {}, el('code', { text: doc.code_sha256 || '—' })),
+    el('dt', { text: '부록 v4.1 코드와 일치' }),
+    el('dd', { text: doc.code_matches_appendix_v4_1 === true ? '예' : doc.code_matches_appendix_v4_1 === false ? '아니오 (코드 수정됨)' : '확인 안 함' }),
+  );
+  for (const p of policies) {
+    if (!p.source) continue;
+    list.append(el('dt', { text: p.label || p.policy }),
+      el('dd', {}, [`${p.source.file} · 평가 ${when(p.source.evaluated_at)} · `, el('code', { text: shortHash(p.source.sha256) })]));
+  }
+}
+
+/* ---------- learning curve: learning_curve.csv ---------- */
+const state = { metric: 'auto_correct', scope: 'all', focus: null };
+let curveRows = [];
+let models = [];
+let slotOf = {};
+
+function setupCurve(rows) {
+  curveRows = rows;
+  const known = unique(rows.map((r) => r.model)).filter((m) => m !== BASELINE);
+  models = [...MODEL_ORDER.filter((m) => known.includes(m)), ...known.filter((m) => !MODEL_ORDER.includes(m))];
+  const canonical = [...MODEL_ORDER, ...known.filter((m) => !MODEL_ORDER.includes(m))];
+  slotOf = Object.fromEntries(models.map((m) => [m, (canonical.indexOf(m) % 8) + 1]));
+
+  const metricSel = $('metric');
+  METRICS.filter((m) => rows.length && m.key in rows[0])
+    .forEach((m) => metricSel.append(el('option', { value: m.key, text: m.label })));
+  const scopes = unique(rows.map((r) => r.scope))
+    .sort((a, b) => (Object.keys(SCOPE_LABELS).indexOf(a) + 99 * !(a in SCOPE_LABELS)) - (Object.keys(SCOPE_LABELS).indexOf(b) + 99 * !(b in SCOPE_LABELS)));
+  const scopeSel = $('scope');
+  scopes.forEach((s) => scopeSel.append(el('option', { value: s, text: SCOPE_LABELS[s] || s })));
+  if (!scopes.includes(state.scope)) state.scope = scopes[0];
+  metricSel.value = state.metric; scopeSel.value = state.scope;
+  metricSel.addEventListener('change', () => { state.metric = metricSel.value; state.focus = null; renderCurve(); });
+  scopeSel.addEventListener('change', () => { state.scope = scopeSel.value; state.focus = null; renderCurve(); });
+
+  const badges = $('curve-badges');
+  unique(rows.map((r) => r.domain)).forEach((d) => { badges.append(badge(`domain: ${d}`, domainNote(d))); addNotice(d); });
+  unique(rows.map((r) => r.connectome)).forEach((c) => badges.append(badge(`connectome: ${c}`)));
+
+  const first = rows[0] || {};
+  $('prov-list').append(
+    el('dt', { text: 'learning_curve.csv 생성' }), el('dd', { text: when(first.generated_at) }),
+    el('dt', { text: '학습곡선 실험 실행' }), el('dd', { text: when(first.run_started_at) }),
+    el('dt', { text: 'learning_curve.csv code' }), el('dd', {}, el('code', { text: first.code_sha256 || '—' })),
+  );
+  new ResizeObserver(() => requestAnimationFrame(renderCurve)).observe($('chart'));
+}
+
+function seriesFor(scopeRows, metricKey) {
+  const xs = unique(scopeRows.filter((r) => r.model !== BASELINE).map((r) => r.n_episodes)).sort((a, b) => a - b);
+  const series = models.map((m) => {
+    const own = scopeRows.filter((r) => r.model === m);
+    const points = xs.map((x) => {
+      const v = own.filter((r) => r.n_episodes === x).map((r) => r[metricKey]).filter(isNum);
+      if (!v.length) return null;
+      return { x, mean: v.reduce((a, b) => a + b, 0) / v.length, min: Math.min(...v), max: Math.max(...v), n: v.length };
+    });
+    return { model: m, label: MODEL_LABELS[m] || m, slot: slotOf[m], shape: SHAPES[(slotOf[m] - 1) % SHAPES.length],
+      params: own[0] ? own[0].params : null,
+      connectome: own[0] ? own[0].connectome : '', points };
+  }).filter((s) => s.points.some(Boolean));
+  const base = scopeRows.filter((r) => r.model === BASELINE).map((r) => r[metricKey]).filter(isNum);
+  return { xs, series, base: base.length ? base.reduce((a, b) => a + b, 0) / base.length : null };
+}
+
+function niceTicks(lo, hi, count = 5) {
+  const raw = (hi - lo) / (count - 1) || 1;
+  const exp = 10 ** Math.floor(Math.log10(raw));
+  const f = raw / exp;
+  const step = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * exp;
+  const start = Math.floor(lo / step) * step;
+  const ticks = [];
+  for (let t = start; t <= hi + step * 1e-9; t += step) ticks.push(+t.toFixed(10));
+  if (ticks[ticks.length - 1] < hi) ticks.push(+(ticks[ticks.length - 1] + step).toFixed(10));
+  return ticks;
+}
+
+function markerNode(shape, cx, cy, r, slot) {
+  const style = { fill: `var(--s${slot})` };
+  let node;
+  if (shape === 'square') node = svg('rect', { x: cx - r * .9, y: cy - r * .9, width: r * 1.8, height: r * 1.8, rx: 1 }, style);
+  else if (shape === 'triangle') node = svg('path', { d: `M${cx},${cy - r * 1.15}L${cx + r * 1.1},${cy + r * .8}L${cx - r * 1.1},${cy + r * .8}Z` }, style);
+  else if (shape === 'diamond') node = svg('path', { d: `M${cx},${cy - r * 1.25}L${cx + r * 1.15},${cy}L${cx},${cy + r * 1.25}L${cx - r * 1.15},${cy}Z` }, style);
+  else node = svg('circle', { cx, cy, r }, style);
+  node.setAttribute('class', 'marker');
+  return node;
+}
+function swatch(slot, shape, dashed = false) {
+  const s = svg('svg', { width: 28, height: 12, viewBox: '0 0 28 12', 'aria-hidden': 'true' });
+  if (dashed) s.append(svg('line', { x1: 1, y1: 6, x2: 27, y2: 6, class: 'refline' }));
+  else {
+    s.append(svg('line', { x1: 1, y1: 6, x2: 27, y2: 6 }, { stroke: `var(--s${slot})`, 'stroke-width': 2, 'stroke-linecap': 'round' }));
+    s.append(markerNode(shape, 14, 6, 4, slot));
+  }
+  return s;
+}
+
+function renderCurve() {
+  const chart = $('chart');
+  const tooltip = $('tooltip');
+  chart.querySelectorAll('svg').forEach((n) => n.remove());
+  tooltip.hidden = true;
+  if (!curveRows.length) return;
+  const metric = METRICS.find((m) => m.key === state.metric);
+  const scopeRows = curveRows.filter((r) => r.scope === state.scope);
+  const { xs, series, base } = seriesFor(scopeRows, metric.key);
+
+  // legend
+  const legend = $('legend');
+  legend.replaceChildren(...series.map((s, i) => el('span', { class: 'legend-item' }, [
+    swatch(s.slot, s.shape), s.label,
+    isNum(s.params) ? el('span', { class: 'sub', text: `파라미터 ${s.params.toLocaleString('ko-KR')}` }) : null,
+  ])));
+  if (base !== null) legend.append(el('span', { class: 'legend-item' }, [swatch(0, null, true), MODEL_LABELS[BASELINE]]));
+
+  // geometry
+  const W = Math.max(280, chart.clientWidth);
+  const H = Math.round(Math.max(280, Math.min(440, W * .55)));
+  const m = { l: W < 480 ? 46 : 56, r: 16, t: 14, b: 46 };
+  const values = series.flatMap((s) => s.points.filter(Boolean).flatMap((p) => [p.min, p.max]));
+  if (base !== null) values.push(base);
+  if (!values.length || !xs.length) return;
+  let lo = Math.min(...values); let hi = Math.max(...values);
+  const pad = (hi - lo) * .08 || Math.abs(hi) * .05 || .05;
+  lo -= pad; hi += pad;
+  if (metric.pct) { lo = Math.max(0, lo); hi = Math.min(1, hi); }
+  if (!metric.pct && lo < 0 && Math.min(...values) >= 0) lo = 0;
+  const ticks = niceTicks(lo, hi);
+  const [y0, y1] = [ticks[0], ticks[ticks.length - 1]];
+  const ys = (v) => m.t + (1 - (v - y0) / (y1 - y0 || 1)) * (H - m.t - m.b);
+  const lx = xs.map(Math.log);
+  const span = (lx[lx.length - 1] - lx[0]) || 1;
+  const [lx0, lx1] = [lx[0] - span * .08, lx[lx.length - 1] + span * .08];
+  const xp = (x) => (xs.length === 1 ? (m.l + W - m.r) / 2 : m.l + (Math.log(x) - lx0) / (lx1 - lx0) * (W - m.l - m.r));
+  const dodge = (i) => (i - (series.length - 1) / 2) * Math.min(6, (W - m.l - m.r) / (xs.length * series.length * 3));
+
+  const root = svg('svg', { viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img', tabindex: 0,
+    'aria-label': `${metric.label} 학습곡선, ${SCOPE_LABELS[state.scope] || state.scope}. 좌우 화살표로 학습 사건 수를 이동합니다. 수치는 아래 '표로 보기'에도 있습니다.` });
+  for (const t of ticks) {
+    root.append(svg('line', { x1: m.l, x2: W - m.r, y1: ys(t), y2: ys(t), class: 'gridline' }));
+    const label = svg('text', { x: m.l - 8, y: ys(t) + 4, 'text-anchor': 'end', class: 'tick' });
+    label.textContent = metric.pct ? `${Math.round(t * 1000) / 10}%` : num(t, t % 1 ? metric.digits : 0);
+    root.append(label);
+  }
+  root.append(svg('line', { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, class: 'axisline' }));
+  xs.forEach((x) => {
+    const t = svg('text', { x: xp(x), y: H - m.b + 18, 'text-anchor': 'middle', class: 'tick' });
+    t.textContent = x.toLocaleString('ko-KR');
+    root.append(t);
+  });
+  const title = svg('text', { x: m.l + (W - m.l - m.r) / 2, y: H - 6, 'text-anchor': 'middle', class: 'axis-title' });
+  title.textContent = '학습에 쓴 가상 사건 수 (로그 축)';
+  root.append(title);
+  if (base !== null) root.append(svg('line', { x1: m.l, x2: W - m.r, y1: ys(base), y2: ys(base), class: 'refline' }));
+
+  const cross = svg('line', { y1: m.t, y2: H - m.b, class: 'crosshair', visibility: 'hidden' });
+  root.append(cross);
+  series.forEach((s, i) => {
+    const color = `var(--s${s.slot})`;
+    const pts = s.points.map((p) => p && { ...p, px: xp(p.x) + dodge(i) });
+    pts.forEach((p) => p && root.append(svg('line', { x1: p.px, x2: p.px, y1: ys(p.min), y2: ys(p.max) },
+      { stroke: color, 'stroke-width': 1.5, 'stroke-linecap': 'round', opacity: .7 })));
+    const d = pts.filter(Boolean).map((p, j) => `${j ? 'L' : 'M'}${p.px.toFixed(1)},${ys(p.mean).toFixed(1)}`).join('');
+    root.append(svg('path', { d, fill: 'none' }, { stroke: color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+    pts.forEach((p) => p && root.append(markerNode(s.shape, p.px, ys(p.mean), 4.5, s.slot)));
+  });
+
+  // hover / keyboard layer
+  const overlay = svg('rect', { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: 'transparent' });
+  root.append(overlay);
+  const show = (idx) => {
+    state.focus = idx;
+    const x = xs[idx];
+    cross.setAttribute('x1', xp(x)); cross.setAttribute('x2', xp(x)); cross.setAttribute('visibility', 'visible');
+    tooltip.replaceChildren(el('div', { class: 'tt-title', text: `학습 사건 ${x.toLocaleString('ko-KR')}개 · ${metric.label}` }));
+    series.forEach((s, i) => {
+      const p = s.points[idx];
+      tooltip.append(el('div', { class: 'tt-row' }, [swatch(s.slot, s.shape),
+        el('span', { class: 'tt-label', text: s.label }),
+        el('span', { class: 'tt-value', text: p ? `${fmt(metric, p.mean)} (${fmt(metric, p.min)}–${fmt(metric, p.max)})` : '—' })]));
+    });
+    if (base !== null) {
+      tooltip.append(el('div', { class: 'tt-row' }, [swatch(0, null, true),
+        el('span', { class: 'tt-label', text: MODEL_LABELS[BASELINE] }), el('span', { class: 'tt-value', text: fmt(metric, base) })]));
+    }
+    tooltip.hidden = false;
+    const scale = chart.clientWidth / W;
+    const tw = tooltip.offsetWidth;
+    let left = xp(x) * scale + 14;
+    if (left + tw > chart.clientWidth) left = xp(x) * scale - tw - 14;
+    tooltip.style.left = `${Math.max(0, left)}px`;
+    tooltip.style.top = `${m.t * scale}px`;
+  };
+  const hide = () => { state.focus = null; cross.setAttribute('visibility', 'hidden'); tooltip.hidden = true; };
+  const nearest = (evt) => {
+    const box = root.getBoundingClientRect();
+    const px = (evt.clientX - box.left) * (W / box.width);
+    let best = 0;
+    xs.forEach((x, i) => { if (Math.abs(xp(x) - px) < Math.abs(xp(xs[best]) - px)) best = i; });
+    return best;
+  };
+  overlay.addEventListener('pointermove', (e) => show(nearest(e)));
+  overlay.addEventListener('pointerdown', (e) => show(nearest(e)));
+  overlay.addEventListener('pointerleave', hide);
+  root.addEventListener('focus', () => show(state.focus ?? 0));
+  root.addEventListener('blur', hide);
+  root.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      show(Math.min(xs.length - 1, Math.max(0, (state.focus ?? 0) + (e.key === 'ArrowRight' ? 1 : -1))));
+    } else if (e.key === 'Escape') hide();
+  });
+  chart.prepend(root);
+
+  // meta + table view
+  const seeds = unique(scopeRows.filter((r) => r.model !== BASELINE).map((r) => r.seed)).length;
+  const tests = unique(scopeRows.map((r) => r.n_test_events));
+  $('curve-meta').textContent = [
+    `점 = 시드 ${seeds}개 평균, 세로 막대 = 시드 간 최소–최대`,
+    `시험 사건 ${tests.join('/')}개 (${SCOPE_LABELS[state.scope] || state.scope}, 모든 조건에서 동일)`,
+    `생성 ${when((curveRows[0] || {}).generated_at)}`, `code ${shortHash((curveRows[0] || {}).code_sha256)}`,
+  ].join(' · ');
+  const table = $('curve-table');
+  table.replaceChildren(
+    el('caption', { text: `${metric.label} · ${SCOPE_LABELS[state.scope] || state.scope}` }),
+    el('thead', {}, el('tr', {}, ['모델', '학습 사건 수', '평균', '최소', '최대', '시드 수', '파라미터']
+      .map((h) => el('th', { scope: 'col', text: h })))),
+  );
+  const tbody = el('tbody');
+  series.forEach((s) => s.points.forEach((p) => p && tbody.append(el('tr', {}, [
+    el('th', { scope: 'row', text: s.label }), el('td', { text: p.x.toLocaleString('ko-KR') }),
+    el('td', { text: fmt(metric, p.mean) }), el('td', { text: fmt(metric, p.min) }), el('td', { text: fmt(metric, p.max) }),
+    el('td', { text: String(p.n) }), el('td', { text: isNum(s.params) ? s.params.toLocaleString('ko-KR') : '—' }),
+  ]))));
+  if (base !== null) {
+    tbody.append(el('tr', {}, [el('th', { scope: 'row', text: MODEL_LABELS[BASELINE] }), el('td', { text: '—' }),
+      el('td', { text: fmt(metric, base) }), el('td', { text: '—' }), el('td', { text: '—' }), el('td', { text: '—' }), el('td', { text: '0' })]));
+  }
+  table.append(tbody);
+}
+
+/* ---------- boot ---------- */
+Promise.allSettled([loadText('results.json'), loadText('learning_curve.csv')]).then(([res, csv]) => {
+  if (res.status === 'fulfilled') {
+    try { renderPolicies(JSON.parse(res.value)); } catch (err) { showError('policies', err); }
+  } else showError('policies', res.reason);
+  if (csv.status === 'fulfilled') {
+    try { setupCurve(parseCSV(csv.value)); renderCurve(); } catch (err) { showError('curve', err); }
+  } else showError('curve', csv.reason);
+});
+</script>
+</body>
+</html>

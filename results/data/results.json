@@ -1,0 +1,190 @@
+{
+  "schema": "chamgap.results/v1",
+  "generated_at": "2026-10-02T18:05:03+09:00",
+  "domain": "SIM_ONLY_UNCALIBRATED_NOT_REAL_PERFORMANCE",
+  "code_sha256": "a8f8ffdb710ff08164a35a3274ad2e6eb0ee7a1b773312a6e9509d1f2797e10a",
+  "code_hash_method": "sha256 of \"<file sha256>  <path>\\n\" lines sorted bytewise by path; shell: sha256sum -t <code_files> | LC_ALL=C sort -k2 | sha256sum",
+  "code_files": {
+    "chamgap/__init__.py": "eedc6a1bda105d1e9b4937085e18923b50e6164efa63fdaeaada216303afba70",
+    "chamgap/collect.py": "4d02a2e7e56a8a77a16e28d16be7cb1138c9a7398d81568b10340b483aaa3109",
+    "chamgap/connectome.py": "ca7041d247d150580e3fb91dbfb904b1d1f60c40764b420caa36195f1a3fed90",
+    "chamgap/contracts.py": "00ae78eb4b1472cfcfa57c9654f97ac382a4084f2f89815b72f7a17655dee3f9",
+    "chamgap/evaluate.py": "60a47d2c2bfe4eb6be720e853a3a98fc6101b112491cbb0a4ef566395ff11737",
+    "chamgap/features.py": "8c280f23274944a7c9e193ab8875271617e05428eaabe9d395d5b9352befd687",
+    "chamgap/gym_adapter.py": "f4ad6489bedf110e00866f8c85174c64a67588faf44369e23fc69671f48e68cc",
+    "chamgap/model.py": "8a3d0aeb21a4749c4da9227c12cdff6936037b0c662617027f8fe1a21c5bcac1",
+    "chamgap/policies.py": "f2f65938f505185baf09d457a85e592f90bc4c28bebc3eb168f6113de446aa9e",
+    "chamgap/safety.py": "1979aa351b02cff2a0f7d16c03d3c321133bfdd8c19922bf47efdce30754783c",
+    "chamgap/simulator.py": "c01e17b44caefaeb8a9549584f2b162ad7b6b3641331e4fb5ddac26b40c14002",
+    "chamgap/train.py": "da5f8680745e729c2760fe6b525721a68ffd0ba1c193ccdbafc51ee0bad1477a",
+    "chamgap/validator.py": "6d3243f67499f71a38db66d4b42a7a20241f3f747f74da140a1c0346282815b1",
+    "experiments/export_site_data.py": "2a1c6d6db695436181a7c026ef672134e4973a8e45b82e08cdfa35c5c46da6bf"
+  },
+  "code_matches_appendix_v4_1": true,
+  "policies": [
+    {
+      "domain": "SIM_ONLY_UNCALIBRATED_NOT_REAL_PERFORMANCE",
+      "policy": "fixed",
+      "episodes": 90,
+      "seed_start": 900001,
+      "summary": {
+        "auto_correct": 0.7777777777777778,
+        "auto_wrong": 0.1111111111111111,
+        "human": 0.1111111111111111,
+        "timeout": 0.0,
+        "initial_resolved": 0.011111111111111112,
+        "checks": 3.0,
+        "elapsed_s": 101.11111111111111,
+        "commanded_water_ml": 3.6666666666666665,
+        "return": 2.1938888888888886,
+        "automatic_coverage": 0.8888888888888888,
+        "conditional_auto_accuracy": 0.8750000000000001,
+        "auto_wrong_bootstrap95": [
+          0.044444444444444446,
+          0.17777777777777778
+        ]
+      },
+      "truth_unknown": {
+        "n_truth_unknown": 12,
+        "handed_to_human": 5,
+        "auto_answered": 7,
+        "timeout": 0,
+        "handoff_rate": 0.4166666666666667,
+        "auto_answer_rate": 0.5833333333333334,
+        "timeout_rate": 0.0
+      },
+      "source": {
+        "file": "runs/fixed_eval.json",
+        "sha256": "0c53bfda9db9d7bba5b6afb98480e374948b8f1d8a1323972e59cd13018a74f7",
+        "evaluated_at": "2026-10-02T17:01:07+09:00"
+      },
+      "model": null,
+      "connectome": null,
+      "label": "고정 정책 P0"
+    },
+    {
+      "domain": "SIM_ONLY_UNCALIBRATED_NOT_REAL_PERFORMANCE",
+      "policy": "runs/mlp.pt",
+      "episodes": 90,
+      "seed_start": 900001,
+      "summary": {
+        "auto_correct": 0.7666666666666667,
+        "auto_wrong": 0.06666666666666667,
+        "human": 0.16666666666666666,
+        "timeout": 0.0,
+        "initial_resolved": 0.011111111111111112,
+        "checks": 2.477777777777778,
+        "elapsed_s": 81.33333333333333,
+        "commanded_water_ml": 3.0,
+        "return": 2.5921111111111106,
+        "automatic_coverage": 0.8333333333333334,
+        "conditional_auto_accuracy": 0.92,
+        "auto_wrong_bootstrap95": [
+          0.022222222222222223,
+          0.12222222222222222
+        ]
+      },
+      "truth_unknown": {
+        "n_truth_unknown": 12,
+        "handed_to_human": 10,
+        "auto_answered": 2,
+        "timeout": 0,
+        "handoff_rate": 0.8333333333333334,
+        "auto_answer_rate": 0.16666666666666666,
+        "timeout_rate": 0.0
+      },
+      "source": {
+        "file": "runs/mlp_eval.json",
+        "sha256": "6931b2ea8d1db746b11a61f648fcd8bc1c5138121c872e40b29b92c0b5015611",
+        "evaluated_at": "2026-10-02T17:01:10+09:00"
+      },
+      "model": {
+        "kind": "mlp",
+        "trainable_parameters": 2116,
+        "epochs": 30,
+        "seed": 7,
+        "checkpoint_sha256": "f26ca85ea42381c7720b4bf257d9e99e11c41fea6e6fa01226fa1ddb41c69332",
+        "dataset_sha256": "e2744feb50b24953ff0c1d4f45325029dea05328668c9025eec534b2d6a26092"
+      },
+      "connectome": null,
+      "label": "MLP"
+    },
+    {
+      "domain": "SIM_ONLY_UNCALIBRATED_NOT_REAL_PERFORMANCE",
+      "policy": "runs/fly.pt",
+      "episodes": 90,
+      "seed_start": 900001,
+      "summary": {
+        "auto_correct": 0.7,
+        "auto_wrong": 0.06666666666666667,
+        "human": 0.06666666666666667,
+        "timeout": 0.16666666666666666,
+        "initial_resolved": 0.011111111111111112,
+        "checks": 3.411111111111111,
+        "elapsed_s": 96.66666666666667,
+        "commanded_water_ml": 2.888888888888889,
+        "return": 2.0855555555555556,
+        "automatic_coverage": 0.7666666666666666,
+        "conditional_auto_accuracy": 0.9130434782608696,
+        "auto_wrong_bootstrap95": [
+          0.022222222222222223,
+          0.12222222222222222
+        ]
+      },
+      "truth_unknown": {
+        "n_truth_unknown": 12,
+        "handed_to_human": 4,
+        "auto_answered": 6,
+        "timeout": 2,
+        "handoff_rate": 0.3333333333333333,
+        "auto_answer_rate": 0.5,
+        "timeout_rate": 0.16666666666666666
+      },
+      "source": {
+        "file": "runs/fly_eval.json",
+        "sha256": "81a323f651c65953ed15ccb91cad8e5075d02b9de7f0376fb2d0fa0595c46a2d",
+        "evaluated_at": "2026-10-02T17:01:14+09:00"
+      },
+      "model": {
+        "kind": "fly",
+        "trainable_parameters": 1444,
+        "epochs": 30,
+        "seed": 7,
+        "checkpoint_sha256": "b4b19e5c429d5bf309c4bded0973285257c711f8d0f150864f39001044b89c76",
+        "dataset_sha256": "e2744feb50b24953ff0c1d4f45325029dea05328668c9025eec534b2d6a26092"
+      },
+      "connectome": "DEMO_RANDOM_NOT_BIOLOGICAL",
+      "label": "fly형 (난수 연결)"
+    }
+  ],
+  "learning_curve_csv": {
+    "domain": "SIM_ONLY_UNCALIBRATED",
+    "connectome": "DEMO_RANDOM_NOT_BIOLOGICAL",
+    "generated_at": "2026-10-02T18:05:03+09:00",
+    "run_started_at": "2026-10-02T17:58:35+09:00",
+    "code_sha256": "98bad81702ab820143dcf60f6f4cb1e151d8dc56b664cec6cd3378c9a7a32462",
+    "code_files": {
+      "chamgap/__init__.py": "eedc6a1bda105d1e9b4937085e18923b50e6164efa63fdaeaada216303afba70",
+      "chamgap/collect.py": "4d02a2e7e56a8a77a16e28d16be7cb1138c9a7398d81568b10340b483aaa3109",
+      "chamgap/connectome.py": "ca7041d247d150580e3fb91dbfb904b1d1f60c40764b420caa36195f1a3fed90",
+      "chamgap/contracts.py": "00ae78eb4b1472cfcfa57c9654f97ac382a4084f2f89815b72f7a17655dee3f9",
+      "chamgap/evaluate.py": "60a47d2c2bfe4eb6be720e853a3a98fc6101b112491cbb0a4ef566395ff11737",
+      "chamgap/features.py": "8c280f23274944a7c9e193ab8875271617e05428eaabe9d395d5b9352befd687",
+      "chamgap/gym_adapter.py": "f4ad6489bedf110e00866f8c85174c64a67588faf44369e23fc69671f48e68cc",
+      "chamgap/model.py": "8a3d0aeb21a4749c4da9227c12cdff6936037b0c662617027f8fe1a21c5bcac1",
+      "chamgap/policies.py": "f2f65938f505185baf09d457a85e592f90bc4c28bebc3eb168f6113de446aa9e",
+      "chamgap/safety.py": "1979aa351b02cff2a0f7d16c03d3c321133bfdd8c19922bf47efdce30754783c",
+      "chamgap/simulator.py": "c01e17b44caefaeb8a9549584f2b162ad7b6b3641331e4fb5ddac26b40c14002",
+      "chamgap/train.py": "da5f8680745e729c2760fe6b525721a68ffd0ba1c193ccdbafc51ee0bad1477a",
+      "chamgap/validator.py": "6d3243f67499f71a38db66d4b42a7a20241f3f747f74da140a1c0346282815b1",
+      "experiments/learning_curve.py": "9933018518c0b87e442e610535085f375c537a530b43a39d93ca8d8b2787da9c",
+      "experiments/analyze_learning_curve.py": "da04b80f12d317d27a442ee740a50956fc03d68a84f68ecb080d8e14a1680921",
+      "experiments/export_site_data.py": "2a1c6d6db695436181a7c026ef672134e4973a8e45b82e08cdfa35c5c46da6bf"
+    },
+    "code_matches_appendix_v4_1": true,
+    "test_seeds": [
+      900001,
+      901000
+    ]
+  }
+}
