@@ -4,7 +4,11 @@
 
 | 경로 | 내용 |
 |---|---|
+| `/` | 안내 페이지 |
 | `/results` | 결과 대시보드. HTML은 고정이고 `results/data/`의 파일만 교체합니다 |
+| `/parts` | 부품 목록, 역할, 배선·물길 연결도. `parts/data/parts.json`만 교체합니다. 연결도는 검토용 제안(실물 검수 전)입니다 |
+
+부품 데이터는 `chamgap_v4/`에서 `python -m experiments.export_site_parts --out <이 저장소>/parts/data`로 만듭니다. 수량·가격·링크는 구매 CSV에서 그대로 가져오고, 합계를 설계서 소계와 대조합니다.
 
 ## 데이터 갱신
 

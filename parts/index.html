@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlyCheck 부품</title>
+<meta name="description" content="참값 × FlyCheck 부품 목록, 역할, 연결 구조. 검토용 제안이며 실물 검수 전.">
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11, 11, 11, .10); --wash: #f0efec;
+    --accent: #2a78d6; --power: #eb6834; --water: #1baf7a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #4a4a46; --border: rgba(255, 255, 255, .10); --wash: #262624;
+      --accent: #3987e5; --power: #d95926; --water: #199e70;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #4a4a46; --border: rgba(255, 255, 255, .10); --wash: #262624;
+    --accent: #3987e5; --power: #d95926; --water: #199e70;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--page); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    font-size: 15px; line-height: 1.6; word-break: keep-all; overflow-wrap: break-word;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+  @media (min-width: 720px) { .wrap { padding: 0 32px; } }
+  nav.wrap { display: flex; gap: 18px; padding-top: 20px; font-size: 14px; }
+  nav a { color: var(--ink-2); text-decoration: none; }
+  nav a[aria-current="page"] { color: var(--ink); font-weight: 600; }
+  nav a:hover { color: var(--accent); }
+  header.wrap { padding-top: 28px; padding-bottom: 8px; }
+  .eyebrow { margin: 0 0 6px; font-size: 13px; color: var(--ink-2); }
+  h1 { margin: 0 0 10px; font-size: 28px; line-height: 1.3; }
+  .lede { margin: 0; max-width: 70ch; color: var(--ink-2); }
+  .notice {
+    display: flex; gap: 10px; margin: 20px 0 0; padding: 12px 16px; font-size: 14px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  }
+  .notice b { flex: none; }
+  .notice span { min-width: 0; overflow-wrap: anywhere; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 20px; }
+  .tile { padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+  .tile .label { margin: 0; font-size: 13px; color: var(--ink-2); }
+  .tile .value { margin: 2px 0 0; font-size: 22px; font-weight: 700; }
+
+  .card { margin: 24px 0; padding: 24px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+  @media (min-width: 720px) { .card { padding: 28px 32px; } }
+  h2 { margin: 0 0 6px; font-size: 20px; line-height: 1.3; }
+  h3 { margin: 0; font-size: 17px; line-height: 1.35; }
+  .section-note { margin: 0; font-size: 14px; color: var(--ink-2); max-width: 75ch; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 16px 0 4px; font-size: 13px; color: var(--ink-2); }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 8px; }
+  .scroll-x::before { content: none; }
+  @media (max-width: 920px) {
+    .scroll-x::before { content: "← 옆으로 밀어서 전체 보기 →"; display: block; position: sticky; left: 0; margin-bottom: 6px; font-size: 12px; color: var(--ink-2); }
+  }
+  .dg { display: block; width: 100%; min-width: 860px; height: auto; }
+  .dg text { font-family: inherit; }
+  .node > rect, .node > path { fill: var(--surface); stroke: var(--axis); stroke-width: 1.5; }
+  .node.pending > rect { stroke-dasharray: 6 4; }
+  .node.group > rect { fill: none; stroke: var(--grid); stroke-dasharray: 2 0; }
+  .node[data-part] { cursor: pointer; }
+  .node[data-part]:focus { outline: none; }
+  .node[data-part]:focus-visible > rect, .node[data-part]:focus-visible > path { stroke: var(--accent); stroke-width: 3; }
+  .n-title { font-size: 15px; font-weight: 600; fill: var(--ink); }
+  .n-sub { font-size: 12.5px; fill: var(--ink-2); }
+  .n-big { font-size: 24px; font-weight: 700; fill: var(--ink); }
+  .pin { font-size: 12.5px; fill: var(--ink-2); }
+  .w-sig { fill: none; stroke: var(--accent); stroke-width: 2; }
+  .w-pwr { fill: none; stroke: var(--power); stroke-width: 3.5; stroke-linejoin: round; }
+  .w-usb { fill: none; stroke: var(--ink-2); stroke-width: 2; stroke-dasharray: 6 4; }
+  .w-water { fill: none; stroke: var(--water); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+  .w-flow { fill: none; stroke: var(--ink-2); stroke-width: 1.8; }
+  .w-label { font-size: 12px; fill: var(--ink-2); }
+  .tag > rect { fill: var(--wash); stroke: none; }
+  .tag text { font-size: 12px; fill: var(--ink); }
+  .mk-sig { fill: var(--accent); } .mk-pwr { fill: var(--power); } .mk-flow { fill: var(--ink-2); } .mk-water { fill: var(--water); }
+  .dg.has-hl [data-part]:not(.hl) { opacity: .22; }
+  .dg [data-part].hl > rect, .dg [data-part].hl > path { stroke: var(--accent); stroke-width: 3; }
+  .dg path.hl, .dg line.hl { stroke-width: 4.5; }
+  .sel {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; min-height: 44px; margin-top: 10px;
+    padding: 10px 14px; font-size: 14px; background: var(--wash); border-radius: 8px;
+  }
+  .sel[hidden] { display: none; }
+  .sel p { margin: 0; flex: 1 1 320px; }
+
+  button, .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; font: inherit; font-size: 13px;
+    color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; text-decoration: none;
+  }
+  button:hover, .btn:hover { border-color: var(--accent); }
+  button:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .cat-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin: 28px 0 12px; }
+  .cat-head:first-of-type { margin-top: 18px; }
+  .cat-head .sum { font-size: 14px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .parts { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .part {
+    display: flex; flex-direction: column; gap: 10px; padding: 16px; background: var(--page);
+    border: 1px solid var(--border); border-radius: 10px; scroll-margin-top: 16px;
+  }
+  .part:target, .part.flash { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
+  .part-top { display: flex; gap: 14px; align-items: center; }
+  .part-media { flex: none; width: 112px; height: 76px; padding: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+  .part-media svg { display: block; width: 100%; height: 100%; }
+  .part-id { margin: 0 0 2px; font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .part .model { margin: 2px 0 0; font-size: 13px; color: var(--ink-2); overflow-wrap: anywhere; }
+  .part .role { margin: 0; font-size: 14px; }
+  .part h4 { margin: 4px 0 0; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+  .part ul { margin: 2px 0 0; padding-left: 18px; font-size: 13.5px; }
+  .part li { margin: 2px 0; }
+  .part .money { margin: 2px 0 0; font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .part .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 4px; }
+  .flag { display: inline-block; padding: 1px 8px; font-size: 12px; font-weight: 600; color: var(--ink); background: var(--wash); border: 1px solid var(--ink-2); border-radius: 999px; }
+
+  .i-body { fill: var(--wash); stroke: var(--ink-2); stroke-width: 2; stroke-linejoin: round; }
+  .i-line { fill: none; stroke: var(--ink-2); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .i-acc { fill: var(--accent); }
+  .i-acc-line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; }
+  .i-dark { fill: var(--ink-2); }
+  .i-hole { fill: var(--surface); stroke: var(--ink-2); stroke-width: 1.5; }
+  .i-soft { fill: var(--accent); opacity: .25; }
+
+  .table-wrap { margin-top: 14px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 9px 10px; text-align: right; border-bottom: 1px solid var(--grid); }
+  th:first-child, td:first-child { text-align: left; padding-left: 0; }
+  thead th { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+  tbody tr:last-child > * { border-bottom: 0; }
+  tfoot td, tfoot th { font-weight: 600; border-top: 1px solid var(--axis); border-bottom: 0; }
+  .meta { margin: 12px 0 0; font-size: 13px; color: var(--ink-2); overflow-wrap: anywhere; }
+  .error { margin-top: 16px; padding: 12px 16px; font-size: 14px; background: var(--wash); border-radius: 8px; }
+  code { padding: 1px 6px; font-size: .92em; background: var(--wash); border-radius: 4px; overflow-wrap: anywhere; }
+  footer.wrap { padding-top: 8px; padding-bottom: 48px; font-size: 13px; color: var(--ink-2); }
+  footer p { margin: 0 0 6px; }
+</style>
+</head>
+<body>
+<nav class="wrap" aria-label="사이트">
+  <a href="/">홈</a><a href="/results">결과</a><a href="/parts" aria-current="page">부품과 연결</a>
+</nav>
+<header class="wrap">
+  <p class="eyebrow">참값 × FlyCheck · /parts</p>
+  <h1>무엇을 사고, 어떻게 연결하는가</h1>
+  <p class="lede">구역 3개(Z1·Z2·Z3)를 만드는 데 필요한 부품과 각 부품의 역할, 연결 방법입니다. 연결도의 부품을 누르거나 카드의 “연결도에서 보기”를 누르면 해당 부품이 강조됩니다.</p>
+  <p class="notice"><b aria-hidden="true">⚠</b><span id="status-note">검토용 제안 · 실물 검수 전입니다. 핀 번호는 클래식 ESP32 DevKit 기준이며 보드를 받은 뒤 확정합니다 (설계서 20.2).</span></p>
+  <div class="tiles" id="tiles" aria-live="polite"></div>
+</header>
+
+<main class="wrap">
+  <section class="card" id="flow" aria-labelledby="flow-title">
+    <h2 id="flow-title">1. 전체 흐름: 데이터와 명령</h2>
+    <p class="section-note">센서 값은 구역 노드에서 노트북으로 올라가고, 점검 명령은 안전 검사를 거쳐 내려옵니다. 서버가 멈춰도 펌프는 보드에서 스스로 멈춥니다 (설계서 2.1·2.2).</p>
+    <div class="scroll-x">
+      <svg class="dg" id="dg-flow" viewBox="0 0 1100 430" role="img" aria-label="데이터와 명령 흐름도">
+        <defs>
+          <marker id="mk-flow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-flow" d="M0 0 L10 5 L0 10 Z"/></marker>
+        </defs>
+        <g class="node group"><rect x="228" y="12" width="852" height="296" rx="12"/><text class="w-label" x="244" y="34">현장 노트북 1대 (브로커·수집기·DB·검증·FlyCheck·실행기)</text></g>
+        <g class="node" data-part="E01 E02 E03 E06 E07" tabindex="0"><rect x="20" y="52" width="180" height="104" rx="8"/>
+          <text class="n-title" x="34" y="78">구역 노드 ×3</text><text class="n-sub" x="34" y="100">ESP32 + 온습도 A/B</text><text class="n-sub" x="34" y="120">수분 A/B · 로드셀</text><text class="n-sub" x="34" y="140">정지·누수 상태</text></g>
+        <path class="w-flow" d="M200 104 H246" marker-end="url(#mk-flow)"/>
+        <text class="w-label" x="206" y="96">MQTT</text>
+        <g class="node"><rect x="250" y="62" width="150" height="84" rx="8"/><text class="n-title" x="264" y="90">MQTT 브로커</text><text class="n-sub" x="264" y="112">Mosquitto</text><text class="n-sub" x="264" y="132">telemetry.v4 · QoS1</text></g>
+        <path class="w-flow" d="M400 104 H426" marker-end="url(#mk-flow)"/>
+        <g class="node"><rect x="430" y="62" width="150" height="84" rx="8"/><text class="n-title" x="444" y="90">수집기 → DB</text><text class="n-sub" x="444" y="112">원시 측정·명령·결과</text><text class="n-sub" x="444" y="132">정답은 별도 권한</text></g>
+        <path class="w-flow" d="M580 104 H606" marker-end="url(#mk-flow)"/>
+        <g class="node"><rect x="610" y="62" width="200" height="84" rx="8"/><text class="n-title" x="624" y="90">참값 검증</text><text class="n-sub" x="624" y="112">범위·고착·쌍 비교 등</text><text class="n-sub" x="624" y="132">근거 부족 → UNKNOWN</text></g>
+        <path class="w-flow" d="M810 104 H836" marker-end="url(#mk-flow)"/>
+        <g class="node"><rect x="840" y="62" width="220" height="84" rx="8"/><text class="n-title" x="854" y="90">FlyCheck</text><text class="n-sub" x="854" y="112">허용된 점검 중</text><text class="n-sub" x="854" y="132">기대 효용이 큰 1개 추천</text></g>
+        <path class="w-flow" d="M950 146 V196" marker-end="url(#mk-flow)"/>
+        <g class="node"><rect x="840" y="200" width="220" height="90" rx="8"/><text class="n-title" x="854" y="228">안전 실행기</text><text class="n-sub" x="854" y="250">만료·중복·물 예산·인터록</text><text class="n-sub" x="854" y="270">→ 승인 또는 거절</text></g>
+        <path class="w-flow" d="M840 245 H204" marker-end="url(#mk-flow)"/>
+        <text class="w-label" x="705" y="236" text-anchor="middle">명령 cmd (retained=false, 유효 30초 이하)</text>
+        <g class="node" data-part="E01 P06" tabindex="0"><rect x="20" y="200" width="180" height="90" rx="8"/><text class="n-title" x="34" y="226">ESP32 로컬 안전</text><text class="n-sub" x="34" y="248">부팅 시 OFF · 하드 타임아웃</text><text class="n-sub" x="34" y="268">정지 입력 확인</text></g>
+        <path class="w-flow" d="M110 290 V326" marker-end="url(#mk-flow)"/>
+        <g class="node" data-part="E04 E05" tabindex="0"><rect x="20" y="330" width="180" height="78" rx="8"/><text class="n-title" x="34" y="358">펌프 · 재측정 · 비교</text><text class="n-sub" x="34" y="380">실행 결과 ack / result</text></g>
+        <path class="w-flow" d="M200 369 H505 V150" marker-end="url(#mk-flow)"/>
+        <text class="w-label" x="214" y="361">결과 → DB</text>
+        <g class="node"><rect x="610" y="330" width="450" height="78" rx="8"/><text class="n-title" x="624" y="358">Vercel (정적 HTML) — 이 사이트</text><text class="n-sub" x="624" y="380">조립 설계서·실험 계획·결과 공개. MQTT·DB에 상시 연결하지 않음</text></g>
+      </svg>
+    </div>
+  </section>
+
+  <section class="card" id="zone" aria-labelledby="zone-title">
+    <h2 id="zone-title">2. 한 구역의 배선 (구역마다 같음)</h2>
+    <p class="section-note">ESP32 한 대가 센서 5개(온습도 2, 수분 2, 로드셀 1)를 읽고 펌프 1대를 제어합니다. 12V 펌프 전원과 3.3V 센서 전원은 분리하고, 신호 기준 접지만 공유합니다 (설계서 20.1, 29.3, 29.4).</p>
+    <div class="legend" aria-label="선 종류">
+      <span><svg width="34" height="10" aria-hidden="true"><line x1="1" y1="5" x2="33" y2="5" class="w-sig"/></svg>3.3V 신호·센서</span>
+      <span><svg width="34" height="10" aria-hidden="true"><line x1="1" y1="5" x2="33" y2="5" class="w-pwr"/></svg>12V 펌프 전력</span>
+      <span><svg width="34" height="10" aria-hidden="true"><line x1="1" y1="5" x2="33" y2="5" class="w-usb"/></svg>USB 5V (보드 전원)</span>
+      <span><svg width="34" height="14" aria-hidden="true"><rect x="1" y="1" width="32" height="12" rx="3" fill="none" stroke="currentColor" stroke-dasharray="4 3"/></svg>점선 테두리 = 모델 미정</span>
+    </div>
+    <div class="scroll-x">
+      <svg class="dg" id="dg-zone" viewBox="0 0 1100 720" role="img" aria-label="한 구역 배선도">
+        <defs>
+          <marker id="mk-pwr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path class="mk-pwr" d="M0 0 L10 5 L0 10 Z"/></marker>
+        </defs>
+        <!-- sensors -->
+        <g class="node" data-part="E02" tabindex="0"><rect x="30" y="46" width="240" height="64" rx="8"/><text class="n-title" x="46" y="72">온습도 A</text><text class="n-sub" x="46" y="94">SHT31-D · I2C 0x44</text></g>
+        <g class="node" data-part="E02" tabindex="0"><rect x="30" y="128" width="240" height="64" rx="8"/><text class="n-title" x="46" y="154">온습도 B</text><text class="n-sub" x="46" y="176">SHT31-D · I2C 0x45</text></g>
+        <path class="w-sig" data-part="E01 E02" d="M270 78 H330 M270 160 H330 M330 78 V160 M330 100 H390 M330 138 H390"/>
+        <text class="w-label" x="336" y="124">I2C</text>
+        <g class="node" data-part="E03" tabindex="0"><rect x="30" y="226" width="240" height="64" rx="8"/><text class="n-title" x="46" y="252">수분 A</text><text class="n-sub" x="46" y="274">SEN0193 · 아날로그</text></g>
+        <path class="w-sig" data-part="E01 E03" d="M270 258 H390"/>
+        <g class="node" data-part="E03" tabindex="0"><rect x="30" y="306" width="240" height="64" rx="8"/><text class="n-title" x="46" y="332">수분 B</text><text class="n-sub" x="46" y="354">SEN0193 · 아날로그</text></g>
+        <path class="w-sig" data-part="E01 E03" d="M270 338 H390"/>
+        <g class="node" data-part="E07" tabindex="0"><rect x="30" y="420" width="240" height="76" rx="8"/><text class="n-title" x="46" y="448">HX711</text><text class="n-sub" x="46" y="470">로드셀 신호 → 디지털</text></g>
+        <path class="w-sig" data-part="E01 E07" d="M270 446 H390 M270 474 H390"/>
+        <text class="w-label" x="330" y="440" text-anchor="middle">DT</text><text class="w-label" x="330" y="468" text-anchor="middle">SCK</text>
+        <path class="w-sig" data-part="E06 E07" d="M150 568 V496"/>
+        <text class="w-label" x="160" y="536">E+ E− A+ A− (4선)</text>
+        <g class="node" data-part="E06" tabindex="0"><rect x="30" y="568" width="240" height="64" rx="8"/><text class="n-title" x="46" y="594">로드셀 10kg</text><text class="n-sub" x="46" y="616">계량 받침 아래</text></g>
+        <text class="w-label" x="30" y="662">센서 전원: ESP32 3V3 / GND</text>
+        <text class="w-label" x="30" y="682">(H01·H03·H05·H06), HX711은 H07</text>
+        <!-- ESP32 -->
+        <g class="node" data-part="E01" tabindex="0"><rect x="390" y="46" width="260" height="560" rx="10"/>
+          <text class="n-big" x="520" y="196" text-anchor="middle">ESP32</text>
+          <text class="n-sub" x="520" y="218" text-anchor="middle">DevKitC-32</text>
+          <text class="n-sub" x="520" y="238" text-anchor="middle">구역마다 1대</text>
+          <text class="pin" x="402" y="104">GPIO21 · SDA</text><text class="pin" x="402" y="142">GPIO22 · SCL</text>
+          <text class="pin" x="402" y="262">GPIO32 · ADC1</text><text class="pin" x="402" y="342">GPIO33 · ADC1</text>
+          <text class="pin" x="402" y="450">GPIO26 · DT</text><text class="pin" x="402" y="478">GPIO27 · SCK</text>
+          <text class="pin" x="638" y="104" text-anchor="end">펌프 명령 · GPIO25</text><text class="pin" x="638" y="144" text-anchor="end">신호 기준 · GND</text>
+          <text class="pin" x="638" y="332" text-anchor="end">입력 전용 · GPIO34</text><text class="pin" x="638" y="412" text-anchor="end">입력 전용 · GPIO35</text>
+          <text class="pin" x="520" y="594" text-anchor="middle">USB-C 5V</text></g>
+        <!-- control side -->
+        <g class="node tag" data-part="R10K E05" tabindex="0"><rect x="700" y="30" width="180" height="26" rx="6"/><text x="790" y="48" text-anchor="middle">GPIO25 외부 10kΩ 풀다운</text></g>
+        <path class="w-sig" data-part="E01 E05" d="M650 100 H700 M650 140 H700"/>
+        <g class="node" data-part="E05" tabindex="0"><rect x="700" y="66" width="180" height="104" rx="8"/><text class="n-title" x="716" y="94">MOSFET 구동</text><text class="n-sub" x="716" y="116">DFR0457</text><text class="n-sub" x="716" y="138">제어 3.3V · 전력 12V</text><text class="n-sub" x="716" y="158">신호 GND = ESP32 GND</text></g>
+        <path class="w-pwr" data-part="E05 E04" d="M880 100 H914" marker-end="url(#mk-pwr)"/>
+        <g class="node" data-part="E04" tabindex="0"><rect x="920" y="66" width="160" height="104" rx="8"/><text class="n-title" x="936" y="94">도우징 펌프</text><text class="n-sub" x="936" y="116">12V · 연동식</text><text class="n-sub" x="936" y="138">1회 10mL 제안</text></g>
+        <path class="w-pwr" data-part="P05 E04" d="M960 170 V180 M1040 170 V180"/>
+        <g class="node" data-part="P05" tabindex="0"><rect x="920" y="180" width="160" height="40" rx="8"/><text class="n-sub" x="1000" y="205" text-anchor="middle">1N4007 역병렬 (줄무늬 +)</text></g>
+        <g class="node" data-part="P06" tabindex="0"><rect x="700" y="300" width="180" height="64" rx="8"/><text class="n-title" x="716" y="326">비상정지 보조 접점</text><text class="n-sub" x="716" y="348">P06 · 외부 10kΩ 풀업</text></g>
+        <path class="w-sig" data-part="E01 P06" d="M700 328 H650"/>
+        <g class="node pending" data-part="LEAK" tabindex="0"><rect x="700" y="380" width="180" height="64" rx="8"/><text class="n-title" x="716" y="406">누수 감지</text><text class="n-sub" x="716" y="428">모델 미정 · 10kΩ 풀업</text></g>
+        <path class="w-sig" data-part="E01 LEAK" d="M700 408 H650"/>
+        <!-- power chain, bottom to top -->
+        <g class="node" data-part="P01" tabindex="0"><rect x="920" y="640" width="160" height="56" rx="8"/><text class="n-title" x="936" y="664">12V 5A 어댑터</text><text class="n-sub" x="936" y="684">P01 · 펌프 전원</text></g>
+        <path class="w-pwr" data-part="P01 P04" d="M1000 640 V620" marker-end="url(#mk-pwr)"/>
+        <g class="node" data-part="P04" tabindex="0"><rect x="920" y="572" width="160" height="44" rx="8"/><text class="n-sub" x="1000" y="599" text-anchor="middle">DC 잭 → 나사단자 (P04)</text></g>
+        <path class="w-pwr" data-part="P04 P07" d="M1000 572 V552" marker-end="url(#mk-pwr)"/>
+        <g class="node" data-part="P07" tabindex="0"><rect x="920" y="504" width="160" height="44" rx="8"/><text class="n-sub" x="1000" y="531" text-anchor="middle">주 퓨즈 (P07)</text></g>
+        <path class="w-pwr" data-part="P07 P06" d="M1000 504 V484" marker-end="url(#mk-pwr)"/>
+        <g class="node" data-part="P06" tabindex="0"><rect x="920" y="424" width="160" height="56" rx="8"/><text class="n-title" x="936" y="448">비상정지 주 접점</text><text class="n-sub" x="936" y="468">DC 차단 정격 미확정</text></g>
+        <path class="w-pwr" data-part="P06 TERM" d="M1000 424 V404" marker-end="url(#mk-pwr)"/>
+        <g class="node pending" data-part="TERM" tabindex="0"><rect x="920" y="356" width="160" height="44" rx="8"/><text class="n-sub" x="1000" y="376" text-anchor="middle">분배 단자대</text><text class="n-sub" x="1000" y="393" text-anchor="middle">→ Z2·Z3 분기도</text></g>
+        <path class="w-pwr" data-part="TERM P07" d="M1000 356 V328" marker-end="url(#mk-pwr)"/>
+        <g class="node" data-part="P07" tabindex="0"><rect x="920" y="280" width="160" height="44" rx="8"/><text class="n-sub" x="1000" y="307" text-anchor="middle">Z1 분기 퓨즈 (P07)</text></g>
+        <path class="w-pwr" data-part="P07 E05" d="M1000 280 V244 H790 V176" marker-end="url(#mk-pwr)"/>
+        <text class="w-label" x="895" y="236" text-anchor="middle">12V 분기 → 전력 입력</text>
+        <!-- USB -->
+        <path class="w-usb" data-part="E01 P03" d="M520 606 V622"/>
+        <g class="node" data-part="P03" tabindex="0"><rect x="440" y="622" width="160" height="34" rx="8"/><text class="n-sub" x="520" y="644" text-anchor="middle">USB-A → C 케이블 (P03)</text></g>
+        <path class="w-usb" data-part="P03 P02" d="M520 656 V668"/>
+        <g class="node" data-part="P02" tabindex="0"><rect x="440" y="668" width="160" height="34" rx="8"/><text class="n-sub" x="520" y="690" text-anchor="middle">5V USB 어댑터 (P02)</text></g>
+      </svg>
+    </div>
+    <div class="sel" id="sel-zone" hidden></div>
+  </section>
+
+  <section class="card" id="water" aria-labelledby="water-title">
+    <h2 id="water-title">3. 물길 (구역마다 독립)</h2>
+    <p class="section-note">물통 하나에서 튜브 3개가 각 구역 펌프로 따로 나갑니다. 어느 구역에 물이 갔는지 구분해야 하므로 펌프 이후의 물길은 합치지 않습니다. 출수구는 프레임에 고정하고 화분이나 계량판을 누르지 않게 합니다 (설계서 20.3, 29.5).</p>
+    <div class="scroll-x">
+      <svg class="dg" id="dg-water" viewBox="0 0 1100 300" role="img" aria-label="물길 구성도">
+        <defs>
+          <marker id="mk-water" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path class="mk-water" d="M0 0 L10 5 L0 10 Z"/></marker>
+        </defs>
+        <g class="node" data-part="W02" tabindex="0"><path d="M40 78 Q40 64 54 64 H176 Q190 64 190 78 V246 Q190 256 180 256 H50 Q40 256 40 246 Z"/>
+          <text class="n-title" x="115" y="150" text-anchor="middle">물통 5L</text><text class="n-sub" x="115" y="172" text-anchor="middle">공용 · 뚜껑 덮음</text><text class="n-sub" x="115" y="192" text-anchor="middle">(W02)</text></g>
+        <path class="w-water" data-part="W01" d="M190 100 C 260 100 260 60 326 60 M190 155 C 250 155 260 150 326 150 M190 210 C 260 210 260 240 326 240"/>
+        <text class="w-label" x="252" y="40" text-anchor="middle">튜브 1·2·3 (W01)</text>
+        <g class="node" data-part="E04" tabindex="0"><rect x="330" y="36" width="140" height="48" rx="8"/><text class="n-title" x="400" y="66" text-anchor="middle">펌프 1</text></g>
+        <g class="node" data-part="E04" tabindex="0"><rect x="330" y="126" width="140" height="48" rx="8"/><text class="n-title" x="400" y="156" text-anchor="middle">펌프 2</text></g>
+        <g class="node" data-part="E04" tabindex="0"><rect x="330" y="216" width="140" height="48" rx="8"/><text class="n-title" x="400" y="246" text-anchor="middle">펌프 3</text></g>
+        <path class="w-water" data-part="W01" d="M470 60 H690 V30 H770 V42" marker-end="url(#mk-water)"/>
+        <path class="w-water" data-part="W01" d="M470 150 H690 V120 H770 V132" marker-end="url(#mk-water)"/>
+        <path class="w-water" data-part="W01" d="M470 240 H690 V210 H770 V222" marker-end="url(#mk-water)"/>
+        <text class="w-label" x="580" y="52" text-anchor="middle">고정 출수구 1</text>
+        <text class="w-label" x="580" y="142" text-anchor="middle">고정 출수구 2</text>
+        <text class="w-label" x="580" y="232" text-anchor="middle">고정 출수구 3</text>
+        <g class="node" data-part="W03 W04" tabindex="0"><path d="M725 46 H815 L805 82 H735 Z"/></g>
+        <g class="node" data-part="W03 W04" tabindex="0"><path d="M725 136 H815 L805 172 H735 Z"/></g>
+        <g class="node" data-part="W03 W04" tabindex="0"><path d="M725 226 H815 L805 262 H735 Z"/></g>
+        <path class="w-pwr" data-part="E06" d="M705 90 H835 M705 180 H835 M705 270 H835" style="stroke: var(--ink-2); stroke-width: 5"/>
+        <text class="n-title" x="860" y="66">Z1</text><text class="n-sub" x="860" y="88">화분 + 계량 받침 (로드셀)</text>
+        <text class="n-title" x="860" y="156">Z2</text><text class="n-sub" x="860" y="178">화분 + 계량 받침 (로드셀)</text>
+        <text class="n-title" x="860" y="246">Z3</text><text class="n-sub" x="860" y="268">화분 + 계량 받침 (로드셀)</text>
+      </svg>
+    </div>
+    <div class="sel" id="sel-water" hidden></div>
+  </section>
+
+  <section class="card" id="parts" aria-labelledby="parts-title">
+    <h2 id="parts-title">4. 부품별 역할과 연결</h2>
+    <p class="section-note" id="parts-note">그림은 이해를 돕기 위한 단순화한 선화입니다. 실제 모양은 각 카드의 구매 페이지에서 확인하세요.</p>
+    <div id="part-list"><p class="meta">불러오는 중…</p></div>
+  </section>
+
+  <section class="card" id="pending" aria-labelledby="pending-title">
+    <h2 id="pending-title">5. 아직 사지 않았거나 정하지 않은 것</h2>
+    <p class="section-note">가격이 0원이 아니라 미확정인 항목입니다 (설계서 19.4). 10kΩ 저항은 소액이지만 1차 구매에 꼭 넣어야 합니다.</p>
+    <div class="parts" id="pending-list"></div>
+  </section>
+
+  <section class="card" id="budget" aria-labelledby="budget-title">
+    <h2 id="budget-title">6. 예산</h2>
+    <div class="table-wrap"><table id="budget-table"></table></div>
+    <p class="meta" id="budget-meta"></p>
+  </section>
+</main>
+
+<footer class="wrap">
+  <p id="source-note">출처: 설계서 v4.1 2.1, 19, 20, 29장과 구매요청서(2026-09-29). 기존 팀 회로도·렌더 이미지의 알려진 오류는 설계서 29.6절에 정리돼 있습니다.</p>
+  <p>갱신: <code>chamgap_v4/</code>에서 <code>python -m experiments.export_site_parts --out ../site/parts/data</code>를 실행해 <code>data/parts.json</code>만 교체합니다.</p>
+</footer>
+
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+function el(tag, props = {}, children = []) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === 'text') node.textContent = v;
+    else if (k === 'class') node.className = v;
+    else node.setAttribute(k, v);
+  }
+  for (const c of [].concat(children)) if (c != null) node.append(c);
+  return node;
+}
+const won = (v) => `${Number(v).toLocaleString('ko-KR')}원`;
+function when(iso) {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? (iso || '—')
+    : `${d.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'medium', timeStyle: 'short' })} KST`;
+}
+function dataUrl(name) {
+  const u = new URL(location.href);
+  u.search = ''; u.hash = '';
+  const last = u.pathname.split('/').pop();
+  if (last && !last.includes('.')) u.pathname += '/';
+  return new URL(`data/${name}`, u);
+}
+
+/* ---- part illustrations: simplified line art (not product photos) ---- */
+const dots = (xs, ys, r, cls = 'i-dark') => xs.flatMap((x) => ys.map((y) => `<circle class="${cls}" cx="${x}" cy="${y}" r="${r}"/>`)).join('');
+const range = (a, b, s) => { const out = []; for (let v = a; v <= b + 1e-9; v += s) out.push(+v.toFixed(2)); return out; };
+const ICONS = {
+  esp32: `<rect class="i-body" x="16" y="18" width="92" height="44" rx="4"/>${dots(range(24, 100, 8), [24, 56], 1.8)}<rect class="i-acc" x="50" y="29" width="30" height="22" rx="2"/><path class="i-line" d="M88 30 h12 v6 h-8 v6 h8 v6 h-12"/><rect class="i-body" x="6" y="33" width="12" height="14" rx="2"/>`,
+  sht31: `<rect class="i-body" x="32" y="10" width="56" height="58" rx="5"/><rect class="i-acc" x="51" y="27" width="18" height="18" rx="2"/>${dots(range(42, 78, 12), [60], 2.4)}<circle class="i-hole" cx="40" cy="18" r="3"/><circle class="i-hole" cx="80" cy="18" r="3"/>`,
+  soil: `<path class="i-body" d="M12 24 H90 L108 40 L90 56 H12 Z"/><rect class="i-dark" x="18" y="30" width="10" height="8" rx="1"/><rect class="i-dark" x="31" y="33" width="6" height="6"/><line class="i-acc-line" x1="46" y1="22" x2="46" y2="58" stroke-dasharray="3 3"/><rect class="i-dark" x="4" y="34" width="8" height="12" rx="1"/>`,
+  pump: `<rect class="i-body" x="8" y="24" width="44" height="36" rx="4"/><circle class="i-body" cx="80" cy="44" r="24"/><circle class="i-acc" cx="80" cy="29" r="4"/><circle class="i-acc" cx="67" cy="51" r="4"/><circle class="i-acc" cx="93" cy="51" r="4"/><circle class="i-dark" cx="80" cy="44" r="3"/><path class="i-line" d="M70 21 L64 6 M90 21 L96 6"/>`,
+  mosfet: `<rect class="i-body" x="8" y="16" width="104" height="48" rx="4"/>${dots([18], [30, 40, 50], 2.2)}<rect class="i-body" x="42" y="18" width="18" height="8"/><rect class="i-dark" x="42" y="26" width="18" height="22" rx="1"/><rect class="i-acc" x="76" y="22" width="28" height="36" rx="2"/><circle class="i-hole" cx="90" cy="32" r="5"/><circle class="i-hole" cx="90" cy="48" r="5"/>`,
+  loadcell: `<rect class="i-body" x="8" y="28" width="104" height="24" rx="3"/><rect class="i-hole" x="52" y="36" width="16" height="8"/><circle class="i-hole" cx="52" cy="40" r="6"/><circle class="i-hole" cx="68" cy="40" r="6"/><rect class="i-acc" x="56" y="29" width="8" height="4"/>${dots([18, 28, 92, 102], [40], 2.5, 'i-hole')}<path class="i-line" d="M8 33 H2 M8 37 H2 M8 43 H2 M8 47 H2"/>`,
+  hx711: `<rect class="i-body" x="26" y="14" width="68" height="52" rx="4"/><rect class="i-dark" x="48" y="30" width="24" height="20" rx="2"/>${dots([34], range(22, 58, 9), 2)}${dots([86], range(26, 54, 9.33), 2)}<rect class="i-acc" x="76" y="20" width="8" height="5" rx="1"/>`,
+  adapter: `<rect class="i-body" x="12" y="20" width="44" height="40" rx="6"/><rect class="i-dark" x="4" y="30" width="8" height="4"/><rect class="i-dark" x="4" y="46" width="8" height="4"/><path class="i-line" d="M56 40 C 76 40 76 58 96 58"/><rect class="i-acc" x="96" y="53" width="18" height="10" rx="2"/>`,
+  usbpower: `<rect class="i-body" x="38" y="22" width="44" height="46" rx="6"/><rect class="i-dark" x="50" y="10" width="6" height="12"/><rect class="i-dark" x="64" y="10" width="6" height="12"/><rect class="i-acc" x="50" y="46" width="20" height="8" rx="1"/>`,
+  usbcable: `<path class="i-line" d="M24 40 C 50 8 70 72 96 40"/><rect class="i-body" x="4" y="32" width="20" height="16" rx="2"/><rect class="i-dark" x="8" y="37" width="12" height="6"/><rect class="i-acc" x="96" y="34" width="18" height="12" rx="6"/>`,
+  dcjack: `<rect class="i-body" x="8" y="28" width="38" height="24" rx="4"/><circle class="i-hole" cx="22" cy="40" r="6"/><circle class="i-dark" cx="22" cy="40" r="2"/><rect class="i-acc" x="54" y="24" width="44" height="32" rx="3"/><circle class="i-hole" cx="67" cy="40" r="6"/><circle class="i-hole" cx="86" cy="40" r="6"/><path class="i-line" d="M63 40 h8 M82 40 h8"/>`,
+  diode: `<path class="i-line" d="M6 40 H36 M84 40 H114"/><rect class="i-dark" x="36" y="31" width="48" height="18" rx="6"/><rect class="i-hole" x="70" y="31" width="6" height="18"/>`,
+  estop: `<rect class="i-body" x="26" y="42" width="68" height="28" rx="4"/><rect class="i-dark" x="52" y="32" width="16" height="12"/><ellipse class="i-acc" cx="60" cy="28" rx="30" ry="12"/>`,
+  fuse: `<path class="i-line" d="M4 40 H30 M90 40 H116"/><rect class="i-body" x="30" y="26" width="60" height="28" rx="8"/><rect class="i-acc" x="48" y="32" width="24" height="16" rx="2"/>`,
+  jumper: `<path class="i-line" d="M16 22 C 50 22 70 58 104 58"/><path class="i-acc-line" d="M16 40 C 50 40 70 40 104 40"/><path class="i-line" d="M16 58 C 50 58 70 22 104 22"/><rect class="i-dark" x="6" y="18" width="10" height="8" rx="1"/><rect class="i-dark" x="6" y="36" width="10" height="8" rx="1"/><rect class="i-dark" x="6" y="54" width="10" height="8" rx="1"/><rect class="i-dark" x="104" y="18" width="10" height="8" rx="1"/><rect class="i-dark" x="104" y="36" width="10" height="8" rx="1"/><rect class="i-dark" x="104" y="54" width="10" height="8" rx="1"/>`,
+  heatshrink: `<rect class="i-body" x="14" y="14" width="92" height="11" rx="5.5"/><rect class="i-acc" x="14" y="31" width="80" height="9" rx="4.5"/><rect class="i-body" x="14" y="46" width="68" height="7" rx="3.5"/><rect class="i-dark" x="14" y="59" width="56" height="5" rx="2.5"/>`,
+  breadboard: `<rect class="i-body" x="6" y="12" width="108" height="56" rx="4"/><path class="i-acc-line" d="M12 19 H108 M12 61 H108"/><path class="i-line" d="M10 40 H110"/>${dots(range(14, 106, 6.13), [28, 34, 46, 52], 1.2)}`,
+  perfboard: `<rect class="i-body" x="14" y="10" width="92" height="60" rx="3"/>${dots(range(22, 98, 7.6), range(18, 62, 7.33), 1.6, 'i-hole')}`,
+  box: `<rect class="i-body" x="20" y="30" width="62" height="42" rx="2"/><path class="i-body" d="M20 30 L38 14 H100 L82 30 Z"/><path class="i-body" d="M82 30 L100 14 V56 L82 72 Z"/><line class="i-acc-line" x1="20" y1="38" x2="82" y2="38"/>`,
+  tube: `<ellipse class="i-line" cx="58" cy="40" rx="40" ry="24"/><ellipse class="i-line" cx="58" cy="40" rx="29" ry="16"/><ellipse class="i-acc-line" cx="58" cy="40" rx="18" ry="9"/><path class="i-line" d="M98 40 C 108 40 110 56 116 62"/>`,
+  tank: `<path class="i-body" d="M30 26 Q30 18 38 18 H82 Q90 18 90 26 V70 Q90 74 86 74 H34 Q30 74 30 70 Z"/><rect class="i-dark" x="44" y="6" width="32" height="12" rx="2"/><path class="i-soft" d="M32 46 H88 V70 Q88 72 86 72 H34 Q32 72 32 70 Z"/><line class="i-acc-line" x1="32" y1="46" x2="88" y2="46"/>`,
+  pot: `<path class="i-body" d="M26 26 H94 L86 72 H34 Z"/><path class="i-dark" d="M28 26 H92 L91 32 H29 Z"/><path class="i-acc-line" d="M60 26 V10 M60 17 q-8 -8 -14 -4 M60 14 q8 -8 14 -4"/>`,
+  soil_bag: `<path class="i-body" d="M30 14 H90 L95 72 H25 Z"/><path class="i-line" d="M31 24 H89"/><rect class="i-acc" x="44" y="36" width="32" height="20" rx="3"/>`,
+  resistor: `<path class="i-line" d="M6 40 H38 M82 40 H114"/><rect class="i-body" x="38" y="29" width="44" height="22" rx="9"/><rect class="i-dark" x="47" y="29" width="4" height="22"/><rect class="i-acc" x="57" y="29" width="4" height="22"/><rect class="i-dark" x="67" y="29" width="4" height="22"/>`,
+  leak: `<path class="i-line" d="M60 10 C 60 10 38 38 38 50 a22 22 0 0 0 44 0 C 82 38 60 10 60 10 Z" stroke-dasharray="4 4"/><path class="i-acc-line" d="M50 74 V64 M70 74 V64"/>`,
+  frame: `<rect class="i-body" x="36" y="16" width="48" height="48" rx="3"/><rect class="i-hole" x="56" y="16" width="8" height="11"/><rect class="i-hole" x="56" y="53" width="8" height="11"/><rect class="i-hole" x="36" y="36" width="11" height="8"/><rect class="i-hole" x="73" y="36" width="11" height="8"/><circle class="i-acc" cx="60" cy="40" r="5"/>`,
+};
+function icon(key) {
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  s.setAttribute('viewBox', '0 0 120 80');
+  s.setAttribute('aria-hidden', 'true');
+  s.innerHTML = ICONS[key] || '<rect class="i-body" x="30" y="16" width="60" height="48" rx="6"/>';   // static strings above only
+  return s;
+}
+
+/* ---- diagram highlight ---- */
+let partsById = {};
+const EXTRA = {
+  R10K: { name: '10kΩ 저항 (미구매·필수)', role: 'GPIO25 풀다운과 GPIO34·35 풀업에 씁니다. 구역당 3개입니다.' },
+  LEAK: { name: '누수 감지 (모델 미정)', role: 'GPIO35로 누수 상태를 알립니다. 미설치·미확인 상태를 정상으로 처리하지 않습니다.' },
+  TERM: { name: '분배 단자대 (미정)', role: '12V를 구역 3개의 분기 퓨즈로 나눕니다. 전력선·단자 정격을 검토해야 합니다 (19.4).' },
+};
+function partInfo(id) {
+  const p = partsById[id];
+  return p ? { name: p.name, role: p.role, card: `#part-${id}` } : (EXTRA[id] ? { ...EXTRA[id], card: '#pending' } : null);
+}
+function highlight(id) {
+  document.querySelectorAll('.dg').forEach((svgEl) => {
+    let any = false;
+    svgEl.querySelectorAll('[data-part]').forEach((n) => {
+      const on = !!id && n.dataset.part.split(' ').includes(id);
+      n.classList.toggle('hl', on);
+      any = any || on;
+    });
+    svgEl.classList.toggle('has-hl', any);
+  });
+  for (const box of [$('sel-zone'), $('sel-water')]) {
+    const svgEl = box.previousElementSibling.querySelector('.dg');
+    const info = id && partInfo(id);
+    if (!info || !svgEl.classList.contains('has-hl')) { box.hidden = true; box.replaceChildren(); continue; }
+    box.replaceChildren(
+      el('p', {}, [el('strong', { text: `${id} ${info.name}` }), ` — ${info.role}`]),
+      el('a', { class: 'btn', href: info.card, text: '카드 보기' }),
+      el('button', { type: 'button', text: '선택 해제' }),
+    );
+    box.querySelector('button').addEventListener('click', () => highlight(null));
+    box.hidden = false;
+  }
+}
+document.querySelectorAll('.dg .node[data-part]').forEach((n) => {
+  const pick = () => highlight(n.dataset.part.split(' ')[0]);
+  n.addEventListener('click', pick);
+  n.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+});
+
+/* ---- render from data/parts.json ---- */
+function list(items) { return items.length ? el('ul', {}, items.map((t) => el('li', { text: t }))) : null; }
+function inDiagrams(id) { return !!document.querySelector(`.dg [data-part~="${id}"]`); }
+
+function render(doc) {
+  partsById = Object.fromEntries(doc.items.map((p) => [p.id, p]));
+  if (doc.status_note) $('status-note').textContent = `${doc.status_note} 가격은 ${doc.price_note || doc.price_date}`;
+  const b = doc.budget;
+  $('tiles').replaceChildren(...[
+    ['품목', `${doc.items.length}개`], ['상품대금 합계', won(b.base)], ['예비품 포함', won(b.base_plus_spares)], ['1차 파일럿 (1구역)', won(b.phase1)],
+  ].map(([label, value]) => el('div', { class: 'tile' }, [el('p', { class: 'label', text: label }), el('p', { class: 'value', text: value })])));
+
+  const host = $('part-list');
+  host.replaceChildren();
+  for (const cat of doc.categories) {
+    const items = doc.items.filter((p) => p.category === cat.id);
+    const sum = items.reduce((a, p) => a + p.total, 0);
+    host.append(el('div', { class: 'cat-head' }, [el('h3', { text: cat.name }), el('span', { class: 'sum', text: `${items.length}종 · 소계 ${won(sum)}` })]));
+    const grid = el('div', { class: 'parts' });
+    for (const p of items) {
+      const actions = el('div', { class: 'actions' });
+      if (inDiagrams(p.id)) {
+        const btn = el('button', { type: 'button', text: '연결도에서 보기' });
+        btn.addEventListener('click', () => {
+          highlight(p.id);
+          const target = document.querySelector(`#dg-zone [data-part~="${p.id}"]`) ? $('zone') : $('water');
+          target.scrollIntoView({ block: 'start' });
+        });
+        actions.append(btn);
+      }
+      if (p.url) actions.append(el('a', { class: 'btn', href: p.url, target: '_blank', rel: 'noopener noreferrer', text: `구매 페이지 · ${p.vendor} ↗` }));
+      const money = [`수량 ${p.qty}${p.spare ? ` (+예비 ${p.spare})` : ''}`, `단가 ${won(p.unit_price)}`, `합계 ${won(p.total)}`];
+      if (p.harness && p.harness.length) money.push(`하네스 ${p.harness.join(', ')}`);
+      grid.append(el('article', { class: 'part', id: `part-${p.id}` }, [
+        el('div', { class: 'part-top' }, [
+          el('div', { class: 'part-media' }, icon(p.icon)),
+          el('div', {}, [el('p', { class: 'part-id', text: `${p.id} · ${cat.name}` }), el('h3', { text: p.name }), el('p', { class: 'model', text: p.model })]),
+        ]),
+        el('p', { class: 'role', text: p.role }),
+        p.connections.length ? el('h4', { text: '어떻게 연결하나' }) : null, list(p.connections),
+        p.checks.length ? el('h4', { text: '연결 전에 확인할 것' }) : null, list(p.checks),
+        el('p', { class: 'money', text: money.join(' · ') }),
+        actions,
+      ]));
+    }
+    host.append(grid);
+  }
+
+  $('pending-list').replaceChildren(...doc.pending.map((x) => el('article', { class: 'part' }, [
+    el('div', { class: 'part-top' }, [
+      el('div', { class: 'part-media' }, icon(x.icon)),
+      el('div', {}, [x.required_first ? el('span', { class: 'flag', text: '! 1차 구매 필수' }) : null, el('h3', { text: x.name })]),
+    ]),
+    el('p', { class: 'role', text: x.spec }),
+    el('p', { class: 'money', text: `결정에 필요한 것: ${x.needs}` }),
+  ])));
+
+  const rows = doc.categories.map((c) => {
+    const sum = doc.items.filter((p) => p.category === c.id).reduce((a, p) => a + p.total, 0);
+    return el('tr', {}, [el('th', { scope: 'row', text: c.name }), el('td', { text: won(sum) })]);
+  });
+  $('budget-table').replaceChildren(
+    el('thead', {}, el('tr', {}, [el('th', { scope: 'col', text: '구분' }), el('th', { scope: 'col', text: '금액' })])),
+    el('tbody', {}, rows),
+    el('tfoot', {}, [
+      el('tr', {}, [el('th', { scope: 'row', text: '상품대금 합계' }), el('td', { text: won(b.base) })]),
+      el('tr', {}, [el('th', { scope: 'row', text: '권장 예비품' }), el('td', { text: won(b.spares) })]),
+      el('tr', {}, [el('th', { scope: 'row', text: '기본 + 예비' }), el('td', { text: won(b.base_plus_spares) })]),
+      el('tr', {}, [el('th', { scope: 'row', text: `계획 한도 ${won(b.limit)} 대비 남은 금액` }), el('td', { text: won(b.limit - b.base_plus_spares) })]),
+    ]),
+  );
+  $('budget-meta').textContent = `구매는 두 번에 나눕니다. 1차 파일럿 ${won(b.phase1)} (1구역분: ESP32 1, SHT31 2, SEN0193 2, 펌프·DFR0457·로드셀·HX711 각 1, 전원·배선·물통·화분·배지) → 검증 후 2차 확장 ${won(b.phase2)}. 남은 금액은 배송·가공·보호 부품(위 5번)을 채워야 하므로 여유 돈이 아닙니다. 데이터 생성 ${when(doc.generated_at)}, 원본 CSV sha256 ${String(doc.source.sha256).slice(0, 12)}.`;
+}
+
+fetch(dataUrl('parts.json'), { cache: 'no-store' })
+  .then((r) => { if (!r.ok) throw new Error(`data/parts.json: HTTP ${r.status}`); return r.json(); })
+  .then((doc) => {
+    render(doc);
+    // cards exist only after render, so a shared link like /parts#part-E05 must scroll now
+    const target = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if (target) target.scrollIntoView({ block: 'start', behavior: 'instant' });
+  })
+  .catch((err) => {
+    const msg = location.protocol === 'file:'
+      ? '파일을 직접 열면(file://) 브라우저가 data/ 파일을 읽지 못합니다. 사이트 폴더에서 python -m http.server 8000 을 실행한 뒤 http://localhost:8000/parts/ 로 여세요.'
+      : `데이터를 읽지 못했습니다: ${err.message}`;
+    $('part-list').replaceChildren(el('p', { class: 'error', role: 'alert', text: msg }));
+  });
+</script>
+</body>
+</html>
